@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <title>高德地图模拟ofo定位单车</title>
+    <link rel="stylesheet" type="text/css" href="css/index.css">
+    </style>
+</head>
+
+<body>
+
+    <!-- 地图容器 -->
+    <div id="container" class="map" tabindex="0"></div>
+
+    <!--  -->
+    <div class="pop">
+        <h2 class='title'>定位的经纬度</h2>
+        <div id='lnglat'></div>
+    </div>
+
+    <!-- 高德地图js -->
+    <script type="text/javascript" src='http://webapi.amap.com/maps?v=1.3&key=6a2932479cef86c60c2d03ef8fe54d68&plugin=AMap.ToolBar'></script>
+
+    <!-- UI组件库 1.0 -->
+    <script src="http://webapi.amap.com/ui/1.0/main.js"></script>
+
+    <!-- 自定义的插件 -->
+    <script src="js/index.js"></script>
+    
+    <!-- 自定义js -->
+    <script type="text/javascript">
+            
+        AMapUI.loadUI(['misc/PositionPicker'], function(PositionPicker) {
+
+            // 实例化地图变量
+            var map = new AMap.Map('container', {
+                // 地图缩放级别
+                zoom: 18,
+                /*
+                 * 用户初始化打开定位坐标
+                 * 可由后台传入,也可前端通过js获取,但前端定位精准度较差
+                */
+                center: [104.080338, 30.616741], 
+                // 允许滚动缩放
+                scrollWheel: true
+            })
+
+            // 定义拖动变量
+            var positionPicker = new PositionPicker({
+                /*
+                 * @设定为拖拽地图模式
+                 * dragMap:拖拽地图（默认）
+                 * dragMarker:拖拽图标
+                */
+                mode: 'dragMarker',
+                map: map,
+                iconStyle: {
+                    /*
+                     * 真正项目时,这里直接改成服务器地址就可以了
+                     * 本地测试,url必须接受本地图片的完整路径
+                    */
+                    url: 'C:/Users/xusong/Desktop/高德地图/img/marker.png',
+                    ancher: [24, 40],
+                    size: [48, 48]
+                }
+            });
+            
+            // 初始化函数
+            positionPicker.start();
+
+            // 添加地图右下角缩放按钮
+            map.addControl(new AMap.ToolBar({
+                liteStyle: true
+            }));
+
+            // 拖动结束，未能成功获取用户选中的经纬度
+            positionPicker.on('fail', function(positionResult) {
+                document.getElementById('lnglat').innerHTML = ' ';
+            });
+
+            // 拖动结束，成功获取用户选中的经纬度
+            positionPicker.on('success', function(positionResult) {
+                document.getElementById('lnglat').innerHTML = positionResult.position;
+                // 请求后台开始渲染自行车位置
+                var bike = new Bike(positionResult.position.lng, positionResult.position.lat, map);
+                bike.getBikePosition().then((data) => {
+                    if(data && data.length >= 1){
+                        bike.renderBike(data);
+                    }
+                })
+            });
+          
+        });
+    </script>
+</body>
+
+</html>
